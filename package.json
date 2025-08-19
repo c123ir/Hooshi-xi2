@@ -1,0 +1,30 @@
+{
+  "name": "chat-application",
+  "version": "1.0.0", 
+  "description": "AI Chat Application with OpenAI integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "NODE_ENV=production node server.js",
+    "dev": "NODE_ENV=development LOG_LEVEL=debug node server.js",
+    "debug": "NODE_ENV=development LOG_LEVEL=debug node --inspect server.js",
+    "test": "echo \"No tests specified\" && exit 0",
+    "logs": "tail -f logs/combined.log",
+    "logs:error": "tail -f logs/error.log",
+    "health": "curl -s http://localhost:3000/health | json_pp",
+    "ssl:create": "node -e \"require('./helpers/https').createSelfSignedCert()\"",
+    "clean:logs": "rm -rf logs/*.log"
+  },
+  "keywords": ["chat", "ai", "openai", "nodejs", "express"],
+  "author": "ChatApp Team", 
+  "license": "MIT",
+  "dependencies": {
+    "compression": "^1.8.1",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "nanoid": "^5.1.5",
+    "node-fetch": "^2.6.7",
+    "winston": "^3.17.0"
+  }
+}

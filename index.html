@@ -1,0 +1,269 @@
+<!-- File: index.html -->
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>دستیار هوش مصنوعی</title>
+    <!-- بارگیری فونت فارسی از Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- آیکون‌های FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <!-- فایل‌های استایل -->
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <!-- overlay برای بستن سایدبار در موبایل -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    
+    <div id="app">
+      <!-- سایدبار جهت نمایش لیست چت‌ها -->
+      <aside id="sidebar" class="sidebar">
+        <div id="userInfo" class="user-info" style="display: none;">
+          <i class="fa fa-user"></i>
+          <span id="currentUsername">کاربر</span>
+        </div>
+        <div class="sidebar-header">
+          <div class="sidebar-title">گفتگوها</div>
+          <div class="sidebar-buttons">
+            <button id="newChatBtn" class="icon-btn" title="گفتگوی جدید">
+              <i class="fa fa-plus"></i>
+            </button>
+            <button id="copyAllBtn" class="icon-btn" title="کپی کل گفتگو">
+              <i class="fa fa-copy"></i>
+            </button>
+            <label id="importLabel" class="icon-btn" title="ایمپورت چت">
+              <i class="fa fa-file-import"></i>
+              <input type="file" id="importInput" accept="application/json" style="display:none;" />
+            </label>
+            <button id="settingsBtn" class="icon-btn" title="تنظیمات مدل">
+              <i class="fa fa-gear"></i>
+            </button>
+            <button id="logoutBtn" class="icon-btn" title="خروج">
+              <i class="fa fa-right-from-bracket"></i>
+            </button>
+          </div>
+        </div>
+        <div class="sidebar-search">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="جستجو..."
+            autocomplete="off"
+          />
+        </div>
+        <ul id="chatList" class="chat-list"></ul>
+      </aside>
+      <!-- بخش اصلی -->
+      <div id="mainContent" class="main-content">
+        <header class="chat-header">
+          <button id="menuToggle" class="icon-btn mobile-only" aria-label="باز کردن منو">
+            <i class="fa fa-bars"></i>
+          </button>
+          <h1 id="currentSubject">گفتگوی جدید</h1>
+          <div class="header-actions">
+            <button id="ttsSettingsBtn" class="icon-btn" title="تنظیمات صوت">
+              <i class="fa fa-cog"></i>
+            </button>
+            <button id="speakAllBtn" class="icon-btn" title="پخش صوتی کل گفتگو">
+              <i class="fa fa-volume-up"></i>
+            </button>
+          </div>
+        </header>
+        <main class="chat-main">
+          <div id="chat-container" class="chat-container" aria-live="polite"></div>
+          <form id="chat-form" class="chat-form">
+            <textarea
+              id="userInput"
+              placeholder="پیام خود را بنویسید..."
+              rows="1"
+              required
+              autocomplete="off"
+            ></textarea>
+            <button type="submit" id="sendBtn" class="icon-btn" title="ارسال">
+              <i class="fa fa-paper-plane"></i>
+            </button>
+          </form>
+        </main>
+      </div>
+    </div>
+    <!-- مودال تنظیمات مدل -->
+    <div id="settingsModal" class="modal">
+      <div class="modal-content">
+        <h3>تنظیمات مدل OpenAI</h3>
+        <div class="model-options">
+          <div class="model-option">
+            <input type="radio" name="model" value="gpt-4o" id="model-gpt4o">
+            <label for="model-gpt4o">
+              <strong>GPT-4o</strong>
+              <span style="color: #28a745; font-weight: 500;">(سریع و باکیفیت)</span>
+            </label>
+          </div>
+          <div class="model-option">
+            <input type="radio" name="model" value="gpt-4o-mini" id="model-gpt4omini">
+            <label for="model-gpt4omini">
+              <strong>GPT-4o Mini</strong>
+              <span style="color: #007bff; font-weight: 500;">(ارزان و سریع)</span>
+            </label>
+          </div>
+          <div class="model-option">
+            <input type="radio" name="model" value="gpt-3.5-turbo" id="model-gpt35">
+            <label for="model-gpt35">
+              <strong>GPT-3.5 Turbo</strong>
+              <span style="color: #6c757d; font-weight: 500;">(اقتصادی)</span>
+            </label>
+          </div>
+        </div>
+        <div class="model-description">
+          <strong>مقایسه مدل‌ها:</strong><br>
+          <span style="color: #28a745;">GPT-4o</span>: سرعت و کیفیت بالا، مناسب پاسخ‌های پیچیده و تحلیلی.<br>
+          <span style="color: #007bff;">GPT-4o Mini</span>: ارزان‌تر، مناسب چت‌های کوتاه و سریع.<br>
+          <span style="color: #6c757d;">GPT-3.5 Turbo</span>: اقتصادی، مناسب مکالمات عمومی.
+        </div>
+        <div class="modal-buttons">
+          <button id="openPasswordBtn" class="btn-secondary">تغییر گذرواژه</button>
+          <button id="adminPanelBtn" class="btn-admin" style="display: none;">
+            <i class="fa fa-cogs"></i>
+            مدیریت سرور
+          </button>
+          <button id="saveModelBtn" class="btn-primary">ذخیره تنظیمات</button>
+          <button id="closeSettingsBtn" class="btn-secondary">بستن</button>
+        </div>
+      </div>
+    </div>
+    <!-- مودال ورود -->
+    <div id="loginModal" class="modal">
+      <div class="modal-content">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <i class="fa fa-user-circle" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+          <h3>ورود به حساب کاربری</h3>
+          <p style="color: #6c757d; margin: 0;">برای ادامه، وارد حساب خود شوید</p>
+        </div>
+        <label for="loginUsername">نام کاربری</label>
+        <input id="loginUsername" type="text" placeholder="نام کاربری خود را وارد کنید" autocomplete="username" />
+        <label for="loginPassword">گذرواژه</label>
+        <input id="loginPassword" type="password" placeholder="گذرواژه خود را وارد کنید" autocomplete="current-password" />
+        <div class="modal-buttons">
+          <button id="loginSubmit" class="btn-primary">ورود</button>
+        </div>
+        <div style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #6c757d;">
+          اگر حساب کاربری ندارید، با ورود اطلاعات، حساب جدید ایجاد می‌شود
+        </div>
+      </div>
+    </div>
+    <!-- مودال تغییر گذرواژه -->
+    <div id="passwordModal" class="modal">
+      <div class="modal-content">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <i class="fa fa-key" style="font-size: 2.5rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+          <h3>تغییر گذرواژه</h3>
+          <p style="color: #6c757d; margin: 0;">برای امنیت حساب، گذرواژه قوی انتخاب کنید</p>
+        </div>
+        <label for="currentPassword">گذرواژه فعلی</label>
+        <input id="currentPassword" type="password" placeholder="گذرواژه فعلی خود را وارد کنید" autocomplete="current-password" />
+        <label for="newPassword">گذرواژه جدید</label>
+        <input id="newPassword" type="password" placeholder="گذرواژه جدید خود را وارد کنید" autocomplete="new-password" />
+        <div class="modal-buttons">
+          <button id="passwordSubmit" class="btn-primary">ذخیره تغییرات</button>
+          <button id="passwordCancel" class="btn-secondary">انصراف</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- مودال تنظیمات TTS -->
+    <div id="ttsSettingsModal" class="modal">
+      <div class="modal-content">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <i class="fa fa-volume-up" style="font-size: 2.5rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+          <h3>تنظیمات صوت</h3>
+          <p style="color: #6c757d; margin: 0;">تنظیمات پخش صوتی متن‌ها</p>
+        </div>
+        <div class="tts-grid">
+          <div class="tts-left">
+            <div class="tts-setting">
+              <label for="ttsVoice">انتخاب صدا</label>
+              <select id="ttsVoice">
+                <option value="alloy">Alloy (خنثی)</option>
+                <option value="echo">Echo (مردانه)</option>
+                <option value="fable">Fable (انگلیسی بریتانیایی)</option>
+                <option value="onyx">Onyx (مردانه عمیق)</option>
+                <option value="nova">Nova (زنانه)</option>
+                <option value="shimmer">Shimmer (زنانه نرم)</option>
+              </select>
+            </div>
+
+            <div class="tts-setting">
+              <label>جنسیت صدا</label>
+              <div class="gender-toggle">
+                <label><input type="radio" name="ttsGender" value="neutral"> <i class="fa fa-user-astronaut"></i> خنثی</label>
+                <label><input type="radio" name="ttsGender" value="male"> <i class="fa fa-mars"></i> مرد</label>
+                <label><input type="radio" name="ttsGender" value="female"> <i class="fa fa-venus"></i> زن</label>
+              </div>
+            </div>
+
+            <div class="tts-setting">
+              <label for="ttsQuality">کیفیت صدا</label>
+              <select id="ttsQuality">
+                <option value="standard">معمولی (کم‌هزینه)</option>
+                <option value="high">بالا (کیفیت بهتر - هزینه بیشتر)</option>
+              </select>
+            </div>
+
+            <div class="tts-setting">
+              <label for="ttsSpeed">سرعت پخش</label>
+              <input type="range" id="ttsSpeed" min="0.25" max="2.0" step="0.05" value="1.0">
+              <span id="ttsSpeedValue">1.0x</span>
+            </div>
+          </div>
+
+          <div class="tts-right">
+            <div class="tts-setting">
+              <label for="ttsCostTier">رده هزینه</label>
+              <select id="ttsCostTier">
+                <option value="low">کم (اقتصادی)</option>
+                <option value="medium">متوسط</option>
+                <option value="high">بالا (با کیفیت بیشتر)</option>
+              </select>
+            </div>
+
+            <div class="tts-setting">
+              <label for="ttsSample">متن نمونه</label>
+              <textarea id="ttsSample" rows="4" placeholder="متن نمونه برای تست صدا...">سلام! این یک نمونه تست صوتی است.</textarea>
+            </div>
+
+            <div class="cost-info">
+              <div>تخمین هزینه (به ازای 1000 کاراکتر): <strong id="costEstimate">—</strong></div>
+              <small style="color:#6c757d">کیفیت بالاتر هزینه را افزایش می‌دهد.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="tts-test">
+          <button id="ttsTestBtn" class="btn-secondary">
+            <i class="fa fa-play"></i> پخش نمونه
+          </button>
+        </div>
+
+        <div class="modal-buttons">
+          <button id="ttsSettingsSave" class="btn-primary">ذخیره تنظیمات</button>
+          <button id="ttsSettingsClose" class="btn-secondary">بستن</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- فایل اسکریپت -->
+    <script src="js/app.js" defer></script>
+    <!-- شناور کنترل پخش صوت -->
+    <div id="floatingTTSControl" class="floating-tts-control" title="توقف/ادامه پخش">
+      <i id="floatingTTSIcon" class="fa fa-volume-up"></i>
+    </div>
+  </body>
+</html>
