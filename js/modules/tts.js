@@ -185,7 +185,11 @@ function openSettings() {
         }
         
         const gender = document.querySelector(`input[name="ttsGender"][value="${ttsSettings.gender}"]`);
-        if (gender) gender.checked = true;
+        if (gender) {
+            gender.checked = true;
+            // اضافه کردن کلاس برای نمایش انتخاب شده
+            updateGenderToggleDisplay();
+        }
         
         const quality = document.getElementById('ttsQuality');
         if (quality) quality.value = ttsSettings.quality;
@@ -193,11 +197,41 @@ function openSettings() {
         const cost = document.getElementById('ttsCostTier');
         if (cost) cost.value = ttsSettings.costTier;
         
+        // راه‌اندازی event listeners برای gender toggle
+        setupGenderToggleListeners();
+        
         estimateCost();
         if (ttsModal) ttsModal.style.display = 'flex';
     } catch (error) {
         console.error('خطا در باز کردن تنظیمات:', error);
     }
+}
+
+// مدیریت نمایش gender toggle
+function updateGenderToggleDisplay() {
+    const genderRadios = document.querySelectorAll('input[name="ttsGender"]');
+    genderRadios.forEach(radio => {
+        const label = radio.closest('label');
+        if (label) {
+            if (radio.checked) {
+                label.style.borderColor = 'var(--primary-color)';
+                label.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
+                label.style.color = 'var(--primary-color)';
+            } else {
+                label.style.borderColor = '#e9ecef';
+                label.style.backgroundColor = '#f8f9fa';
+                label.style.color = '';
+            }
+        }
+    });
+}
+
+// راه‌اندازی event listeners برای gender toggle
+function setupGenderToggleListeners() {
+    const genderRadios = document.querySelectorAll('input[name="ttsGender"]');
+    genderRadios.forEach(radio => {
+        radio.addEventListener('change', updateGenderToggleDisplay);
+    });
 }
 
 function closeSettings() {

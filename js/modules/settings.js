@@ -16,6 +16,8 @@ window.SettingsModule = (function() {
     
     // راه‌اندازی event listeners
     setupEventListeners();
+    
+    console.log('✅ SettingsModule مقداردهی شد');
   }
   
   function setupEventListeners() {
@@ -39,12 +41,36 @@ window.SettingsModule = (function() {
         window.open('/admin/dashboard.html', '_blank');
       });
     }
+    
+    // دکمه تغییر گذرواژه
+    const openPasswordBtn = document.getElementById('openPasswordBtn');
+    if (openPasswordBtn) {
+      openPasswordBtn.addEventListener('click', () => {
+        // بستن modal تنظیمات اول
+        closeSettings();
+        // سپس باز کردن password modal توسط auth module که قبلا event listener دارد
+        const passwordModal = document.getElementById('passwordModal');
+        if (passwordModal) {
+          passwordModal.style.display = 'flex';
+        }
+      });
+    }
   }
   
   function openSettings() {
+    console.log('🔥 SettingsModule.openSettings() called!');
+    
+    // بررسی وجود modal
+    if (!settingsModal) {
+      console.error('❌ settingsModal element not found!');
+      return;
+    }
+    
     // مقداردهی رادیوها از localStorage
     const radios = document.querySelectorAll('input[name="model"]');
     const modelToSelect = selectedModel || 'gpt-4o-mini';
+    console.log('🔧 Setting model radios:', modelToSelect);
+    
     radios.forEach(r => {
       r.checked = r.value === modelToSelect;
       const option = r.closest('.model-option');
@@ -70,6 +96,7 @@ window.SettingsModule = (function() {
       adminPanelBtn.style.display = 'none';
     }
     
+    console.log('✅ Showing settings modal');
     settingsModal.style.display = 'flex';
   }
   
@@ -107,3 +134,18 @@ window.SettingsModule = (function() {
     setSelectedModel
   };
 })();
+
+// Auto-init برای اطمینان از مقداردهی
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.SettingsModule && typeof window.SettingsModule.init === 'function') {
+      window.SettingsModule.init();
+    }
+  });
+} else {
+  if (window.SettingsModule && typeof window.SettingsModule.init === 'function') {
+    window.SettingsModule.init();
+  }
+}
+
+console.log('📦 ماژول Settings بارگذاری شد - SettingsModule در window قرار گرفت');

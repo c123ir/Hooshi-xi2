@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Settings Functionality</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        #console { height: 300px; overflow-y: auto; background: #f8f9fa; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Settings Functionality Test</h1>
+    
+    <div>
+        <button onclick="testSettingsButton()">Test Settings Button</button>
+        <button onclick="testTTSButton()">Test TTS Settings Button</button>
+        <button onclick="testModuleAvailability()">Test Module Availability</button>
+        <button onclick="clearConsole()">Clear Console</button>
+    </div>
+    
+    <div id="status" class="status"></div>
+    <div id="console"></div>
+    
+    <script>
+        const statusDiv = document.getElementById('status');
+        const consoleDiv = document.getElementById('console');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        function updateStatus(message, isSuccess = true) {
+            statusDiv.textContent = message;
+            statusDiv.className = isSuccess ? 'status success' : 'status error';
+        }
+        
+        function testModuleAvailability() {
+            log('Testing module availability...');
+            
+            const modules = {
+                'AuthModule': window.AuthModule,
+                'ChatModule': window.ChatModule, 
+                'UIModule': window.UIModule,
+                'TTSModule': window.TTSModule,
+                'SettingsModule': window.SettingsModule
+            };
+            
+            let allLoaded = true;
+            
+            for (const [name, module] of Object.entries(modules)) {
+                if (module) {
+                    log(`✅ ${name} loaded`);
+                } else {
+                    log(`❌ ${name} NOT loaded`);
+                    allLoaded = false;
+                }
+            }
+            
+            if (window.SettingsModule) {
+                const hasOpenSettings = typeof window.SettingsModule.openSettings === 'function';
+                log(`Settings openSettings function: ${hasOpenSettings ? '✅' : '❌'}`);
+            }
+            
+            if (window.TTSModule) {
+                const hasOpenTTSSettings = typeof window.TTSModule.openTTSSettings === 'function';
+                log(`TTS openTTSSettings function: ${hasOpenTTSSettings ? '✅' : '❌'}`);
+            }
+            
+            updateStatus(allLoaded ? 'All modules loaded successfully!' : 'Some modules are missing!', allLoaded);
+        }
+        
+        function testSettingsButton() {
+            log('Testing settings button functionality...');
+            
+            if (!window.SettingsModule) {
+                updateStatus('SettingsModule not available!', false);
+                log('❌ SettingsModule not found');
+                return;
+            }
+            
+            if (typeof window.SettingsModule.openSettings !== 'function') {
+                updateStatus('openSettings function not available!', false);
+                log('❌ openSettings function not found');
+                return;
+            }
+            
+            try {
+                window.SettingsModule.openSettings();
+                updateStatus('Settings modal should be open now!', true);
+                log('✅ Called SettingsModule.openSettings() successfully');
+            } catch (error) {
+                updateStatus('Error calling openSettings!', false);
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function testTTSButton() {
+            log('Testing TTS settings button functionality...');
+            
+            if (!window.TTSModule) {
+                updateStatus('TTSModule not available!', false);
+                log('❌ TTSModule not found');
+                return;
+            }
+            
+            if (typeof window.TTSModule.openTTSSettings !== 'function') {
+                updateStatus('openTTSSettings function not available!', false);
+                log('❌ openTTSSettings function not found');
+                return;
+            }
+            
+            try {
+                window.TTSModule.openTTSSettings();
+                updateStatus('TTS Settings modal should be open now!', true);
+                log('✅ Called TTSModule.openTTSSettings() successfully');
+            } catch (error) {
+                updateStatus('Error calling openTTSSettings!', false);
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        function clearConsole() {
+            consoleDiv.innerHTML = '';
+            statusDiv.textContent = '';
+            statusDiv.className = 'status';
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('Page loaded, testing modules...');
+                testModuleAvailability();
+            }, 1000);
+        });
+    </script>
+    
+    <!-- Load the same modules as the main app -->
+    <script src="js/modules/auth.js" defer></script>
+    <script src="js/modules/ui.js" defer></script>
+    <script src="js/modules/chat.js" defer></script>
+    <script src="js/modules/tts.js" defer></script>
+    <script src="js/modules/settings.js" defer></script>
+    <script src="js/app.js" defer></script>
+</body>
+</html>

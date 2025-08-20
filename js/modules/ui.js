@@ -112,47 +112,48 @@ function setupEventListeners() {
         }
     });
     
-    // تنظیمات
-    document.getElementById('settingsBtn')?.addEventListener('click', openSettings);
+    // تنظیمات - اتصال به SettingsModule
+    document.getElementById('settingsBtn')?.addEventListener('click', (e) => {
+        console.log('🔥 Settings button clicked!');
+        e.preventDefault();
+        if (window.SettingsModule && typeof window.SettingsModule.openSettings === 'function') {
+            console.log('✅ Opening settings via SettingsModule');
+            window.SettingsModule.openSettings();
+        } else {
+            console.error('❌ SettingsModule یا openSettings function پیدا نشد!', {
+                SettingsModule: !!window.SettingsModule,
+                openSettings: window.SettingsModule ? typeof window.SettingsModule.openSettings : 'N/A'
+            });
+        }
+        closeSidebar();
+    });
     
-    // بستن تنظیمات
-    document.getElementById('closeSettingsBtn')?.addEventListener('click', closeSettings);
+    // تنظیمات TTS - اتصال به TTSModule  
+    document.getElementById('ttsSettingsBtn')?.addEventListener('click', (e) => {
+        console.log('🔥 TTS Settings button clicked!');
+        e.preventDefault();
+        if (window.TTSModule && typeof window.TTSModule.openTTSSettings === 'function') {
+            console.log('✅ Opening TTS settings via TTSModule');
+            window.TTSModule.openTTSSettings();
+        } else {
+            console.error('❌ TTSModule یا openTTSSettings function پیدا نشد!', {
+                TTSModule: !!window.TTSModule,
+                openTTSSettings: window.TTSModule ? typeof window.TTSModule.openTTSSettings : 'N/A'
+            });
+        }
+    });
     
-    // ذخیره تنظیمات
-    document.getElementById('saveModelBtn')?.addEventListener('click', saveSettings);
+    // بستن تنظیمات - deprecated, will be removed when SettingsModule fully takes over
+    // document.getElementById('closeSettingsBtn')?.addEventListener('click', closeSettings);
+    
+    // ذخیره تنظیمات - deprecated, will be removed when SettingsModule fully takes over  
+    // document.getElementById('saveModelBtn')?.addEventListener('click', saveSettings);
     
     // چت جدید
     document.getElementById('newChatBtn')?.addEventListener('click', () => {
         if (window.ChatModule) window.ChatModule.newChat();
         closeSidebar();
     });
-    
-    // دکمه پنل ادمین
-    document.getElementById('adminPanelBtn')?.addEventListener('click', () => {
-        window.open('/admin/dashboard.html', '_blank');
-    });
-}
-
-// مدیریت تنظیمات
-function openSettings() {
-    const selectedModel = localStorage.getItem('openai_model') || 'gpt-4o-mini';
-    const modelSelect = document.getElementById('modelSelect');
-    if (modelSelect) modelSelect.value = selectedModel;
-    
-    if (settingsModal) settingsModal.style.display = 'flex';
-}
-
-function closeSettings() {
-    if (settingsModal) settingsModal.style.display = 'none';
-}
-
-function saveSettings() {
-    const modelSelect = document.getElementById('modelSelect');
-    if (modelSelect) {
-        localStorage.setItem('openai_model', modelSelect.value);
-        showNotification('تنظیمات ذخیره شد');
-    }
-    closeSettings();
 }
 
 // کپی کردن

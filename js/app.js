@@ -153,6 +153,10 @@ async function initApp() {
             console.log('🔊 مقداردهی TTSModule...');
             window.TTSModule.initializeTTS();
         }
+        if (window.SettingsModule) {
+            console.log('⚙️ مقداردهی SettingsModule...');
+            window.SettingsModule.init();
+        }
         
         console.log('🚀 اپلیکیشن آماده است');
     } catch (error) {
@@ -168,10 +172,11 @@ function waitForModules() {
                 AuthModule: !!window.AuthModule,
                 ChatModule: !!window.ChatModule,
                 UIModule: !!window.UIModule,
-                TTSModule: !!window.TTSModule
+                TTSModule: !!window.TTSModule,
+                SettingsModule: !!window.SettingsModule
             });
             
-            if (window.AuthModule && window.ChatModule && window.UIModule && window.TTSModule) {
+            if (window.AuthModule && window.ChatModule && window.UIModule && window.TTSModule && window.SettingsModule) {
                 console.log('✅ همه ماژول‌ها بارگیری شدند');
                 resolve();
             } else {
