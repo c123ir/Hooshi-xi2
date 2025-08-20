@@ -40,7 +40,7 @@
 
 ```bash
 # 1. بررسی safety checks
-- حجم فایل‌ها < 200 خط
+- حجم فایل‌ها < 5000 خط
 - Syntax صحیح JavaScript
 - کامنت‌های فارسی موجود
 - Error handling وجود دارد

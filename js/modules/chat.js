@@ -502,6 +502,166 @@ async function saveChat() {
     }
 }
 
+// دریافت آمار چت‌های کاربر
+async function getChatStats() {
+    try {
+        const auth = window.AuthModule?.getCurrentAuth();
+        if (!auth?.username) return null;
+        
+        const response = await fetch(`/api/chat/stats/${auth.username}`);
+        if (!response.ok) throw new Error('خطا در دریافت آمار');
+        
+        return await response.json();
+    } catch (error) {
+        console.error('خطا در دریافت آمار چت:', error);
+        return null;
+    }
+}
+
+// پشتیبان‌گیری از چت
+async function backupChat(chatId) {
+    try {
+        console.log('💾 شروع پشتیبان‌گیری چت:', chatId);
+        
+        const response = await fetch(`/api/chat/backup/${chatId}`, {
+            method: 'POST'
+        });
+        
+        if (!response.ok) throw new Error('خطا در پشتیبان‌گیری');
+        
+        const result = await response.json();
+        
+        if (window.UIModule) {
+            window.UIModule.showNotification(
+                `پشتیبان ایجاد شد: ${result.backupPath} (${result.sizeFormatted})`, 
+                'success'
+            );
+        }
+        
+        console.log('✅ پشتیبان‌گیری موفق:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ خطا در پشتیبان‌گیری:', error);
+        if (window.UIModule) {
+            window.UIModule.showNotification('خطا در پشتیبان‌گیری چت', 'error');
+        }
+        throw error;
+    }
+}
+
+// عملیات دسته‌ای
+async function batchOperation(operation, chatIds, params = {}) {
+    if (!chatIds || !chatIds.length) {
+        throw new Error('لیست چت‌ها خالی است');
+    }
+    
+    try {
+        console.log(`🔄 شروع عملیات دسته‌ای ${operation}:`, chatIds);
+        
+        // نمایش loading
+        if (window.UIModule) {
+            window.UIModule.showLoadingState(`در حال انجام ${operation}...`);
+        }
+        
+        const response = await fetch('/api/chat/batch-operations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                operation,
+                chatIds,
+                params
+            })
+        });
+        
+        if (!response.ok) throw new Error('خطا در عملیات دسته‌ای');
+        
+        const result = await response.json();
+        console.log('✅ عملیات دسته‌ای تمام شد:', result);
+        
+        // پردازش نتایج
+        const { success, failed, duration } = result.result;
+        
+        let message = `عملیات ${operation} تمام شد:\n`;
+        message += `✅ موفق: ${success.length}\n`;
+        if (failed.length > 0) {
+            message += `❌ ناموفق: ${failed.length}\n`;
+        }
+        message += `⏱️ زمان: ${duration}ms`;
+        
+        if (window.UIModule) {
+            window.UIModule.hideLoadingState();
+            window.UIModule.showNotification(message, 'success');
+        }
+        
+        // بروزرسانی لیست چت‌ها
+        await fetchChats();
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ خطا در عملیات دسته‌ای:', error);
+        
+        if (window.UIModule) {
+            window.UIModule.hideLoadingState();
+            window.UIModule.showNotification('خطا در عملیات دسته‌ای: ' + error.message, 'error');
+        }
+        
+        throw error;
+    }
+}
+
+// آرشیو دسته‌ای چت‌ها
+async function batchArchiveChats(chatIds, isArchived = true) {
+    return await batchOperation('archive', chatIds, { isArchived });
+}
+
+// پشتیبان‌گیری دسته‌ای
+async function batchBackupChats(chatIds) {
+    return await batchOperation('backup', chatIds);
+}
+
+// حذف دسته‌ای چت‌ها
+async function batchDeleteChats(chatIds) {
+    const confirmed = confirm(`⚠️ آیا مطمئن هستید که می‌خواهید ${chatIds.length} چت را حذف کنید؟\nاین عمل غیرقابل بازگشت است!`);
+    if (!confirmed) return;
+    
+    return await batchOperation('delete', chatIds);
+}
+
+// دریافت لیست چت‌ها با pagination
+async function fetchChatsWithPagination(options = {}) {
+    try {
+        console.log('💬 دریافت چت‌ها با pagination:', options);
+        
+        const params = new URLSearchParams();
+        if (options.page) params.append('page', options.page);
+        if (options.limit) params.append('limit', options.limit);
+        if (options.sortBy) params.append('sortBy', options.sortBy);
+        if (options.order) params.append('order', options.order);
+        
+        const url = `/api/chats${params.toString() ? '?' + params.toString() : ''}`;
+        const res = await fetch(url);
+        
+        if (!res.ok) throw new Error('خطا در دریافت چت‌ها');
+        
+        const result = await res.json();
+        console.log('💬 چت‌ها دریافت شد:', result);
+        
+        // اگر pagination استفاده شده باشد
+        if (result.chats && result.pagination) {
+            return result;
+        }
+        
+        // compatibility با نسخه قبلی
+        return { chats: result, pagination: null };
+        
+    } catch (error) {
+        console.error('❌ خطا در دریافت چت‌ها:', error);
+        throw error;
+    }
+}
+
 // مقداردهی ماژول چت
 function init() {
     console.log('💬 شروع مقداردهی ماژول چت...');
@@ -557,7 +717,14 @@ if (typeof window !== 'undefined') {
         editMessage,
         deleteMessage,
         saveChat,
-        scrollToBottom
+        scrollToBottom,
+        getChatStats,
+        backupChat,
+        batchOperation,
+        batchArchiveChats,
+        batchBackupChats,
+        batchDeleteChats,
+        fetchChatsWithPagination
     };
 }
 

@@ -200,6 +200,324 @@ function showLimitNotification(message) {
     showNotification(message, 'error');
 }
 
+// نمایش loading state
+function showLoadingState(message = 'در حال بارگذاری...') {
+    const existingLoader = document.getElementById('global-loader');
+    if (existingLoader) {
+        existingLoader.querySelector('.loader-text').textContent = message;
+        return;
+    }
+    
+    const loader = document.createElement('div');
+    loader.id = 'global-loader';
+    loader.className = 'global-loader';
+    loader.innerHTML = `
+        <div class="loader-backdrop">
+            <div class="loader-content">
+                <div class="spinner"></div>
+                <div class="loader-text">${message}</div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(loader);
+    
+    // اضافه کردن استایل‌ها اگر وجود ندارند
+    if (!document.getElementById('loader-styles')) {
+        const style = document.createElement('style');
+        style.id = 'loader-styles';
+        style.textContent = `
+            .global-loader {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .loader-backdrop {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(2px);
+            }
+            
+            .loader-content {
+                position: relative;
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+                min-width: 200px;
+            }
+            
+            .loader-content .spinner {
+                width: 40px;
+                height: 40px;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #007bff;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .loader-text {
+                font-size: 1rem;
+                color: #333;
+                text-align: center;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+// مخفی کردن loading state
+function hideLoadingState() {
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.remove();
+    }
+}
+
+// نمایش دیالوگ تأیید
+function showConfirmDialog(message, title = 'تأیید') {
+    return new Promise((resolve) => {
+        const dialog = document.createElement('div');
+        dialog.className = 'confirm-dialog';
+        dialog.innerHTML = `
+            <div class="dialog-backdrop">
+                <div class="dialog-content">
+                    <h3 class="dialog-title">${title}</h3>
+                    <p class="dialog-message">${message}</p>
+                    <div class="dialog-actions">
+                        <button class="btn-cancel">لغو</button>
+                        <button class="btn-confirm">تأیید</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // اضافه کردن استایل‌ها
+        if (!document.getElementById('dialog-styles')) {
+            const style = document.createElement('style');
+            style.id = 'dialog-styles';
+            style.textContent = `
+                .confirm-dialog {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 10001;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .dialog-backdrop {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                }
+                
+                .dialog-content {
+                    position: relative;
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                    max-width: 400px;
+                    min-width: 300px;
+                }
+                
+                .dialog-title {
+                    margin: 0 0 1rem 0;
+                    color: #333;
+                    font-size: 1.2rem;
+                }
+                
+                .dialog-message {
+                    margin: 0 0 1.5rem 0;
+                    color: #666;
+                    line-height: 1.5;
+                }
+                
+                .dialog-actions {
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: flex-end;
+                }
+                
+                .dialog-actions button {
+                    padding: 0.5rem 1rem;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                }
+                
+                .btn-cancel {
+                    background: #6c757d;
+                    color: white;
+                }
+                
+                .btn-confirm {
+                    background: #dc3545;
+                    color: white;
+                }
+                
+                .btn-cancel:hover {
+                    background: #5a6268;
+                }
+                
+                .btn-confirm:hover {
+                    background: #c82333;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(dialog);
+        
+        // Event listeners
+        const cancelBtn = dialog.querySelector('.btn-cancel');
+        const confirmBtn = dialog.querySelector('.btn-confirm');
+        const backdrop = dialog.querySelector('.dialog-backdrop');
+        
+        function cleanup() {
+            dialog.remove();
+        }
+        
+        cancelBtn.addEventListener('click', () => {
+            cleanup();
+            resolve(false);
+        });
+        
+        confirmBtn.addEventListener('click', () => {
+            cleanup();
+            resolve(true);
+        });
+        
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) {
+                cleanup();
+                resolve(false);
+            }
+        });
+        
+        // ESC key
+        function handleEsc(e) {
+            if (e.key === 'Escape') {
+                cleanup();
+                resolve(false);
+                document.removeEventListener('keydown', handleEsc);
+            }
+        }
+        document.addEventListener('keydown', handleEsc);
+    });
+}
+
+// نمایش progress bar
+function showProgress(percentage, message = '') {
+    let progressEl = document.getElementById('global-progress');
+    
+    if (!progressEl) {
+        progressEl = document.createElement('div');
+        progressEl.id = 'global-progress';
+        progressEl.className = 'global-progress';
+        progressEl.innerHTML = `
+            <div class="progress-content">
+                <div class="progress-message"></div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="progress-percentage"></div>
+            </div>
+        `;
+        
+        // اضافه کردن استایل‌ها
+        if (!document.getElementById('progress-styles')) {
+            const style = document.createElement('style');
+            style.id = 'progress-styles';
+            style.textContent = `
+                .global-progress {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: white;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                    z-index: 9999;
+                    min-width: 250px;
+                }
+                
+                .progress-message {
+                    margin-bottom: 0.5rem;
+                    font-size: 0.9rem;
+                    color: #333;
+                }
+                
+                .progress-bar {
+                    width: 100%;
+                    height: 8px;
+                    background: #f0f0f0;
+                    border-radius: 4px;
+                    overflow: hidden;
+                    margin-bottom: 0.5rem;
+                }
+                
+                .progress-fill {
+                    height: 100%;
+                    background: #007bff;
+                    border-radius: 4px;
+                    transition: width 0.3s ease;
+                }
+                
+                .progress-percentage {
+                    text-align: center;
+                    font-size: 0.8rem;
+                    color: #666;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(progressEl);
+    }
+    
+    // بروزرسانی محتوا
+    progressEl.querySelector('.progress-message').textContent = message;
+    progressEl.querySelector('.progress-fill').style.width = `${percentage}%`;
+    progressEl.querySelector('.progress-percentage').textContent = `${percentage}%`;
+}
+
+// مخفی کردن progress bar
+function hideProgress() {
+    const progressEl = document.getElementById('global-progress');
+    if (progressEl) {
+        progressEl.remove();
+    }
+}
+
 // مقداردهی ماژول UI
 function init() {
     initDOM();
@@ -214,7 +532,12 @@ if (typeof window !== 'undefined') {
         toggleSidebar,
         closeSidebar,
         showNotification,
-        copyToClipboard
+        copyToClipboard,
+        showLoadingState,
+        hideLoadingState,
+        showConfirmDialog,
+        showProgress,
+        hideProgress
     };
 }
 

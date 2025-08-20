@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin JavaScript</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>Test Admin Panel JavaScript</h1>
+    <div id="testResults"></div>
+    
+    <!-- ایجاد المنت‌های مورد نیاز برای تست -->
+    <div style="display: none;">
+        <button id="addUserBtn">Add User</button>
+        <div id="usersTableBody"></div>
+        <div id="userModal"></div>
+        <form id="userForm"></form>
+    </div>
+
+    <script src="admin/modules/UserManager.js"></script>
+    <script>
+        const testResults = document.getElementById('testResults');
+        
+        function addTestResult(message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            testResults.appendChild(div);
+        }
+        
+        // Test 1: Check if UserManager class exists
+        try {
+            if (typeof UserManager !== 'undefined') {
+                addTestResult('✅ UserManager class loaded successfully');
+            } else {
+                addTestResult('❌ UserManager class not found', 'error');
+            }
+        } catch (error) {
+            addTestResult(`❌ Error loading UserManager: ${error.message}`, 'error');
+        }
+        
+        // Test 2: Try to create UserManager instance
+        try {
+            const userManager = new UserManager();
+            addTestResult('✅ UserManager instance created successfully');
+            
+            // Test 3: Check if UserManager methods exist
+            if (typeof userManager.showAddUserModal === 'function') {
+                addTestResult('✅ showAddUserModal method exists');
+            } else {
+                addTestResult('❌ showAddUserModal method not found', 'error');
+            }
+            
+            if (typeof userManager.loadUsers === 'function') {
+                addTestResult('✅ loadUsers method exists');
+            } else {
+                addTestResult('❌ loadUsers method not found', 'error');
+            }
+            
+        } catch (error) {
+            addTestResult(`❌ Error creating UserManager instance: ${error.message}`, 'error');
+        }
+        
+        // Test 4: Check console for any errors
+        setTimeout(() => {
+            addTestResult('🔍 Check browser console for any additional errors or warnings', 'warning');
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -4,7 +4,38 @@
 
 ---
 
-## 🏷️ نسخه 2.0.0 - آگوست 2025 (نسخه فعلی)
+## 🏷️ نسخه 2.0.1 - آگوست 2025 (نسخه فعلی)
+
+### 🛡️ **Admin Panel Hotfix - Critical Fixes**
+
+#### 🔧 **رفع مشکلات حیاتی پنل ادمین**
+- ✅ **DOM Element Issues**: حل مشکل `sidebarOverlay element پیدا نشد`
+- ✅ **ID Mismatch**: تصحیح `usersTableBody` ID reference
+- ✅ **Authentication Errors**: رفع خطای 403 در API calls
+- ✅ **Global Scope Issues**: حل مشکل `userManager` object access
+- ✅ **onClick Handlers**: تصحیح `window.userManager` references
+
+#### 🎯 **بهبودهای عملکردی**
+- **makeAuthenticatedRequest()**: Helper function برای authenticated API calls
+- **Element Discovery**: بهبود system تشخیص DOM elements
+- **Error Logging**: جامع‌تر شدن سیستم لاگ‌گذاری خطاها
+- **UI Responsiveness**: بهبود پاسخگویی رابط کاربری
+
+#### 📊 **وضعیت پنل ادمین پس از آپدیت**
+- ✅ **Dashboard**: آمار realtime و navigation کامل
+- ✅ **User Management**: CRUD operations کاملاً فعال
+- ✅ **Stats Section**: نمایش آمار تفصیلی سیستم
+- ✅ **System Health**: مانیتورینگ وضعیت سلامت
+- ✅ **Settings**: تنظیمات سیستم قابل دسترس
+
+#### 🔒 **بهبودهای امنیتی**
+- **Session Management**: بهبود مدیریت session در admin panel
+- **CORS Policy**: تنظیم صحیح برای admin endpoints
+- **Input Validation**: اعتبارسنجی کامل‌تر ورودی‌ها
+
+---
+
+## 🏷️ نسخه 2.0.0 - آگوست 2025
 
 ### 🎉 **Major Release - TTS Revolution**
 
@@ -15,6 +46,7 @@
 - **💰 محاسبه هزینه**: تخمین هزینه قبل از تولید صوت
 - **🚫 Anti-overlap**: جلوگیری از تداخل چندین صدا
 - **📌 مدیریت چت پیشرفته**: Pin, Archive, Enhanced Search
+- **🛡️ پنل ادمین کامل**: مدیریت کاربران، آمار، تنظیمات
 
 #### 🔧 **بهبودهای فنی**
 - **JavaScript Refactoring**: DOMContentLoaded pattern
@@ -22,6 +54,7 @@
 - **Error Handling**: Comprehensive error catching
 - **Performance**: Memory management برای audio files
 - **Security**: Enhanced input validation
+- **Admin Panel Architecture**: Modular design با 590+ LOC UserManager
 
 #### 🐛 **رفع باگ‌های مهم**
 - ✅ `importInputEl is not defined` - DOM timing issue

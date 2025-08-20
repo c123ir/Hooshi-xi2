@@ -49,11 +49,27 @@ function requireAuth(req, res, next) {اپن‌اِی‌آی را بر عهده 
 
 require('dotenv').config();
 const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const { nanoid } = require('nanoid');
 
 // Helpers
-const { ensureChatDir, readChatFile, writeChatFile, listChats, BASE_CHAT_DIR } = require('./helpers/fs');
+const { 
+  ensureChatDir, 
+  readChatFile, 
+  writeChatFile, 
+  listChats, 
+  deleteChatFile,
+  backupChatFile,
+  validateChatStructure,
+  calculateChatStats,
+  batchDeleteChats,
+  batchBackupChats,
+  batchArchiveChats,
+  getCacheStats,
+  clearCache,
+  BASE_CHAT_DIR 
+} = require('./helpers/fs');
 const { findUser, createUser, updateUser, getAllUsers, deleteUser, updatePassword, verifyPassword, checkUserLimits, updateUserStats, setSessionCookie, clearSessionCookie, verifySession, ensureUsersFile } = require('./helpers/auth');
 const { logger, logUserActivity, logAdminAction, logSecurityEvent, logError } = require('./helpers/logger');
 const { rateLimiters, requestLogger, securityHeaders, errorHandler, notFoundHandler, compressionMiddleware } = require('./helpers/middleware');
@@ -500,13 +516,54 @@ async function getAssistantReply(messages, { temperature = 0.3, maxTokens = 600,
   throw lastErr;
 }
 
-// GET /api/chats - لیست چت‌ها
+// GET /api/chats - لیست چت‌ها (بروزرسانی شده برای pagination)
 app.get('/api/chats', requireAuth, async (req, res) => {
-  console.log('درخواست لیست چت‌ها دریافت شد');
-  const chats = await listChats(req.user.username);
-  chats.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  res.json(chats);
-  console.log('لیست چت‌ها ارسال شد');
+  const startTime = Date.now();
+  
+  try {
+    console.log('درخواست لیست چت‌ها دریافت شد');
+    
+    // استخراج پارامترهای pagination و sorting
+    const {
+      page = 1,
+      limit = null,
+      sortBy = 'updatedAt',
+      order = 'desc'
+    } = req.query;
+    
+    const options = {};
+    if (page && limit) {
+      options.page = parseInt(page);
+      options.limit = parseInt(limit);
+      options.sortBy = sortBy;
+      options.order = order;
+    }
+    
+    const result = await listChats(req.user.username, options);
+    const duration = Date.now() - startTime;
+    
+    // اگر pagination استفاده نشده، compatibility با نسخه قبلی
+    if (Object.keys(options).length === 0) {
+      result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      res.json(result);
+    } else {
+      res.json({
+        ...result,
+        duration,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    console.log(`لیست چت‌ها در ${duration}ms ارسال شد`);
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logError(error, req);
+    res.status(500).json({ 
+      error: 'خطا در دریافت لیست چت‌ها', 
+      details: error.message,
+      duration 
+    });
+  }
 });
 
 // POST /api/chats - ایجاد چت جدید
@@ -578,20 +635,235 @@ app.put('/api/chats/:id', requireAuth, async (req, res) => {
   console.log(`چت با شناسه ${id} ویرایش شد - ویژه: ${chat.isPinned}, آرشیو: ${chat.isArchived}`);
 });
 
-// DELETE /api/chats/:id - حذف یک چت
-const fsNative = require('fs').promises;
-const path = require('path');
+// DELETE /api/chats/:id - حذف یک چت (بروزرسانی شده)
 app.delete('/api/chats/:id', requireAuth, async (req, res) => {
+  const startTime = Date.now();
   const { id } = req.params;
-  console.log(`درخواست حذف چت با شناسه ${id}`);
-  const filePath = require('path').join(BASE_CHAT_DIR, req.user.username, `${id}.json`);
+  
   try {
-    await fsNative.unlink(filePath);
-    res.json({ success: true });
-    console.log(`چت با شناسه ${id} حذف شد`);
-  } catch (e) {
-    console.log(`چت با شناسه ${id} برای حذف یافت نشد`);
-    return res.status(404).json({ error: 'چت یافت نشد' });
+    console.log(`درخواست حذف چت با شناسه ${id} توسط ${req.user.username}`);
+    
+    const success = await deleteChatFile(id, req.user.username);
+    const duration = Date.now() - startTime;
+    
+    if (success) {
+      res.json({ success: true, duration });
+      console.log(`چت ${id} با موفقیت حذف شد در ${duration}ms`);
+    } else {
+      res.status(404).json({ error: 'چت یافت نشد' });
+    }
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logError(error, req);
+    res.status(500).json({ 
+      error: 'خطا در حذف چت', 
+      details: error.message,
+      duration 
+    });
+  }
+});
+
+// GET /api/chat/stats/:username - آمار چت‌های کاربر
+app.get('/api/chat/stats/:username', requireAuth, async (req, res) => {
+  const startTime = Date.now();
+  const { username } = req.params;
+  
+  try {
+    // بررسی مجوز دسترسی به آمار کاربر دیگر
+    if (req.user.username !== username && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'دسترسی به آمار این کاربر مجاز نیست' });
+    }
+    
+    console.log(`درخواست آمار چت‌های کاربر ${username}`);
+    
+    const stats = await calculateChatStats(username);
+    const duration = Date.now() - startTime;
+    
+    res.json({ 
+      username,
+      stats,
+      duration,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`آمار چت‌های ${username} در ${duration}ms ارسال شد`);
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logError(error, req);
+    res.status(500).json({ 
+      error: 'خطا در محاسبه آمار چت‌ها', 
+      details: error.message,
+      duration 
+    });
+  }
+});
+
+// GET /api/cache/stats - آمار کش سیستم
+app.get('/api/cache/stats', requireAuth, async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    // فقط ادمین می‌تواند آمار کش را ببیند
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'دسترسی محدود به ادمین' });
+    }
+    
+    console.log(`درخواست آمار کش توسط ادمین ${req.user.username}`);
+    
+    const cacheStats = getCacheStats();
+    const duration = Date.now() - startTime;
+    
+    res.json({ 
+      cache: cacheStats,
+      duration,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`آمار کش در ${duration}ms ارسال شد`);
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logError(error, req);
+    res.status(500).json({ 
+      error: 'خطا در دریافت آمار کش', 
+      details: error.message,
+      duration 
+    });
+  }
+});
+
+// POST /api/chat/backup/:id - پشتیبان‌گیری از چت
+app.post('/api/chat/backup/:id', requireAuth, async (req, res) => {
+  const startTime = Date.now();
+  const { id } = req.params;
+  
+  try {
+    console.log(`درخواست پشتیبان‌گیری چت ${id} توسط ${req.user.username}`);
+    
+    const backupPath = await backupChatFile(id, req.user.username);
+    const duration = Date.now() - startTime;
+    
+    if (backupPath) {
+      // محاسبه اطلاعات پشتیبان
+      const fsNative = require('fs').promises;
+      const backupStats = await fsNative.stat(backupPath);
+      
+      res.json({ 
+        success: true,
+        backupPath: backupPath.split('/').pop(), // فقط نام فایل
+        size: backupStats.size,
+        sizeFormatted: `${(backupStats.size / 1024).toFixed(2)} KB`,
+        duration
+      });
+      
+      console.log(`پشتیبان چت ${id} در ${duration}ms ایجاد شد`);
+    } else {
+      res.status(404).json({ error: 'چت برای پشتیبان‌گیری یافت نشد' });
+    }
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logError(error, req);
+    res.status(500).json({ 
+      error: 'خطا در پشتیبان‌گیری چت', 
+      details: error.message,
+      duration 
+    });
+  }
+});
+
+// POST /api/chat/batch-operations - عملیات دسته‌ای
+app.post('/api/chat/batch-operations', requireAuth, async (req, res) => {
+  const startTime = Date.now();
+  const { operation, chatIds, params = {} } = req.body;
+  
+  try {
+    console.log(`درخواست عملیات دسته‌ای ${operation} برای ${chatIds?.length} چت`);
+    
+    if (!operation || !chatIds || !Array.isArray(chatIds)) {
+      return res.status(400).json({ 
+        error: 'پارامترهای عملیات دسته‌ای نامعتبر',
+        required: 'operation, chatIds[]' 
+      });
+    }
+    
+    let result;
+    const username = req.user.username;
+    
+    switch (operation) {
+      case 'delete':
+        result = await batchDeleteChats(chatIds, username);
+        break;
+        
+      case 'backup':
+        result = await batchBackupChats(chatIds, username);
+        break;
+        
+      case 'archive':
+        const isArchived = params.isArchived !== false; // default true
+        result = await batchArchiveChats(chatIds, username, isArchived);
+        break;
+        
+      default:
+        return res.status(400).json({ 
+          error: 'عملیات پشتیبانی نشده',
+          supportedOperations: ['delete', 'backup', 'archive']
+        });
+    }
+    
+    const duration = Date.now() - startTime;
+    
+    res.json({
+      operation,
+      result: {
+        ...result,
+        duration,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+    console.log(`عملیات دسته‌ای ${operation} در ${duration}ms تمام شد: ${result.success?.length} موفق`);
+    
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logError(error, req);
+    res.status(500).json({ 
+      error: 'خطا در عملیات دسته‌ای', 
+      details: error.message,
+      duration 
+    });
+  }
+});
+
+// POST /api/cache/clear - پاکسازی کش (فقط ادمین)
+app.post('/api/cache/clear', requireAuth, async (req, res) => {
+  const startTime = Date.now();
+  const { pattern } = req.body;
+  
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'دسترسی محدود به ادمین' });
+    }
+    
+    console.log(`درخواست پاکسازی کش توسط ادمین ${req.user.username}`);
+    
+    const clearedCount = clearCache(pattern);
+    const duration = Date.now() - startTime;
+    
+    res.json({ 
+      success: true,
+      clearedCount,
+      pattern: pattern || 'all',
+      duration
+    });
+    
+    console.log(`کش پاکسازی شد: ${clearedCount} مورد در ${duration}ms`);
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logError(error, req);
+    res.status(500).json({ 
+      error: 'خطا در پاکسازی کش', 
+      details: error.message,
+      duration 
+    });
   }
 });
 

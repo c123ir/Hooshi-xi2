@@ -1,11 +1,12 @@
 # 🤖 Hooshi-xi2 | دستیار هوش مصنوعی چت
 
-> پلتفرم پیشرفته گفتگو با هوش مصنوعی و قابلیت‌های TTS فارسی
+> پلتفرم پیشرفته گفتگو با هوش مصنوعی، TTS فارسی و پنل مدیریت کامل
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Persian Support](https://img.shields.io/badge/persian-supported-red.svg)](#)
 [![TTS Enabled](https://img.shields.io/badge/TTS-OpenAI-blue.svg)](#)
+[![Admin Panel](https://img.shields.io/badge/Admin-Panel-purple.svg)](#)
 
 ---
 
@@ -28,6 +29,14 @@
 - نقش‌های کاربری: **User** و **Admin**
 - محدودیت‌های استفاده قابل تنظیم
 - **پنل مدیریت** کامل برای ادمین
+
+### 🛡️ **پنل ادمین حرفه‌ای**
+- **Dashboard** تعاملی با آمار realtime
+- **مدیریت کاربران**: CRUD کامل، نقش‌ها، محدودیت‌ها
+- **آمار تفصیلی**: کاربران، چت‌ها، پیام‌ها، عملکرد
+- **مانیتورینگ سیستم**: سلامت، memory، CPU usage
+- **تنظیمات مرکزی**: کنترل فیچرها و محدودیت‌ها
+- **رابط Responsive**: قابل استفاده در موبایل و تبلت
 
 ### 🎨 **UI/UX مدرن**
 - طراحی **RTL** کامل فارسی
@@ -66,8 +75,34 @@ npm start
 ```
 
 ### دسترسی
-- **وب اپلیکیشن**: http://localhost:3000
-- **پنل مدیریت**: http://localhost:3000/admin/dashboard.html
+- **چت عمومی**: http://localhost:3000
+- **پنل ادمین**: http://localhost:3000/admin/dashboard.html
+- **ورود ادمین**: admin / admin (قابل تغییر)
+
+---
+
+## 🎯 دسترسی سریع
+
+### 🚀 **برای شروع فوری** (5 دقیقه)
+```bash
+npm install && npm start
+```
+👉 [راهنمای کامل راه‌اندازی](./Docs/QUICK_START.md)
+
+### 🛡️ **پنل ادمین** 
+```
+URL: http://localhost:3000/admin/dashboard.html
+Username: admin
+Password: admin
+```
+👉 [مستندات پنل ادمین](./Docs/ADMIN-PANEL.md)
+
+### 📡 **API کاربری**
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -d '{"username":"admin","password":"admin"}'
+```
+👉 [مستندات کامل API](./Docs/API.md)
 
 ---
 
@@ -75,20 +110,21 @@ npm start
 
 مستندات جامع پروژه در پوشه [`Docs/`](./Docs/) قرار دارد:
 
-| 📄 مستند | 🎯 محتوا | 👥 مخاطب |
-|-----------|----------|-----------|
-| [📖 README](./Docs/README.md) | نمای کامل پروژه | همه |
-| [🚀 QUICK_START](./Docs/QUICK_START.md) | راه‌اندازی 5 دقیقه‌ای | مبتدیان |
-| [📡 API](./Docs/API.md) | مستندات تکنیکال | Backend Dev |
-| [🎨 FRONTEND](./Docs/FRONTEND.md) | راهنمای UI/UX | Frontend Dev |
-| [🌐 DEPLOYMENT](./Docs/DEPLOYMENT.md) | راهنمای استقرار | DevOps |
-| [📈 CHANGELOG](./Docs/CHANGELOG.md) | تاریخچه تغییرات | Developer |
+| 📄 مستند | 🎯 محتوا | 👥 مخاطب | ⏱️ زمان |
+|-----------|----------|-----------|---------|
+| [📖 README](./Docs/README.md) | نمای کامل پروژه | همه | 10 دقیقه |
+| [🚀 QUICK_START](./Docs/QUICK_START.md) | راه‌اندازی فوری | مبتدیان | 5 دقیقه |
+| [🛡️ ADMIN-PANEL](./Docs/ADMIN-PANEL.md) | پنل مدیریت کامل | ادمین/مدیر | 15 دقیقه |
+| [📡 API](./Docs/API.md) | مستندات تکنیکال | Backend Dev | 25 دقیقه |
+| [🎨 FRONTEND](./Docs/FRONTEND.md) | راهنمای UI/UX | Frontend Dev | 35 دقیقه |
+| [🌐 DEPLOYMENT](./Docs/DEPLOYMENT.md) | راهنمای استقرار | DevOps | 45 دقیقه |
+| [📈 CHANGELOG](./Docs/CHANGELOG.md) | تاریخچه تغییرات | Developer | 3 دقیقه |
 
-### 📋 شروع بر اساس نقش
-- **🚀 کاربر جدید**: [QUICK_START](./Docs/QUICK_START.md) → [README](./Docs/README.md)
-- **🔧 توسعه‌دهنده Backend**: [API](./Docs/API.md) → [DATABASE](./Docs/DATABASE.md)
-- **🎨 توسعه‌دهنده Frontend**: [FRONTEND](./Docs/FRONTEND.md) → [API](./Docs/API.md)
-- **🌐 DevOps**: [DEPLOYMENT](./Docs/DEPLOYMENT.md) → [MONITORING](./Docs/DEPLOYMENT.md#monitoring)
+### 📋 مسیر یادگیری بر اساس نقش
+- **� کاربر/مدیر**: [QUICK_START](./Docs/QUICK_START.md) → [ADMIN-PANEL](./Docs/ADMIN-PANEL.md)
+- **🔧 Backend Developer**: [API](./Docs/API.md) → [DATABASE](./Docs/DATABASE.md)
+- **🎨 Frontend Developer**: [FRONTEND](./Docs/FRONTEND.md) → [ADMIN-PANEL](./Docs/ADMIN-PANEL.md)
+- **🌐 DevOps Engineer**: [DEPLOYMENT](./Docs/DEPLOYMENT.md) → [API](./Docs/API.md)
 
 ---
 

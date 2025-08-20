@@ -774,7 +774,311 @@ async function example() {
 
 ---
 
-## 📊 API Usage Analytics
+## �️ Admin Panel API
+
+> **نکته**: تمام endpoint های Admin نیاز به نقش `admin` دارند
+
+### GET /api/admin/users
+دریافت لیست کاربران (فقط ادمین)
+
+**Query Parameters:**
+- `page`: شماره صفحه (پیش‌فرض: 1)
+- `limit`: تعداد در صفحه (پیش‌فرض: 10)
+- `search`: جستجو در نام کاربری (اختیاری)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "username": "admin",
+        "firstName": "مدیر",
+        "lastName": "سیستم", 
+        "email": "admin@example.com",
+        "role": "admin",
+        "isActive": true,
+        "createdAt": "2025-08-14T02:29:19.340Z",
+        "updatedAt": "2025-08-20T06:26:28.945Z",
+        "chatsCount": 7,
+        "messagesCount": 35,
+        "lastLoginAt": "2025-08-20T06:26:28.945Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 5,
+      "pages": 1
+    }
+  }
+}
+```
+
+**Status Codes:**
+- `200`: موفق
+- `401`: غیر مجاز (نیاز به ورود)
+- `403`: ممنوع (نیاز به نقش admin)
+
+---
+
+### POST /api/admin/users
+ایجاد کاربر جدید (فقط ادمین)
+
+**Request:**
+```json
+{
+  "username": "newuser",
+  "password": "securepass123",
+  "firstName": "نام",
+  "lastName": "خانوادگی",
+  "email": "user@example.com",
+  "role": "user",
+  "isActive": true,
+  "limits": {
+    "maxChats": null,
+    "maxMessagesPerChat": null,
+    "expiryDate": null
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "username": "newuser",
+      "firstName": "نام",
+      "lastName": "خانوادگی",
+      "email": "user@example.com", 
+      "role": "user",
+      "isActive": true,
+      "createdAt": "2025-08-20T12:00:00Z"
+    }
+  }
+}
+```
+
+---
+
+### PUT /api/admin/users/:username
+بروزرسانی کاربر (فقط ادمین)
+
+**Request:**
+```json
+{
+  "firstName": "نام جدید",
+  "lastName": "خانوادگی جدید",
+  "email": "newemail@example.com",
+  "role": "admin",
+  "isActive": false,
+  "limits": {
+    "maxChats": 10,
+    "maxMessagesPerChat": 50,
+    "expiryDate": "2025-12-31T23:59:59Z"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "کاربر با موفقیت بروزرسانی شد",
+    "updatedFields": ["firstName", "lastName", "email", "role"]
+  }
+}
+```
+
+---
+
+### DELETE /api/admin/users/:username
+حذف کاربر (فقط ادمین)
+
+**توجه**: کاربر `admin` قابل حذف نیست
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "کاربر newuser با موفقیت حذف شد",
+    "deletedData": {
+      "chatsDeleted": 3,
+      "messagesDeleted": 15
+    }
+  }
+}
+```
+
+**خطا (کاربر admin):**
+```json
+{
+  "success": false,
+  "error": "نمی‌توان کاربر admin را حذف کرد"
+}
+```
+
+---
+
+### GET /api/admin/stats
+آمار کلی سیستم (فقط ادمین)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalUsers": 5,
+    "activeUsers": 5,
+    "totalChats": 11,
+    "totalMessages": 49,
+    "uptime": 3600,
+    "version": "2.0.1",
+    "systemInfo": {
+      "nodeVersion": "18.17.0",
+      "platform": "darwin",
+      "memory": {
+        "used": "45.2MB",
+        "total": "512MB",
+        "percentage": 8.8
+      }
+    },
+    "usage24h": {
+      "newUsers": 2,
+      "newChats": 8,
+      "newMessages": 23,
+      "ttsRequests": 15
+    }
+  }
+}
+```
+
+---
+
+### GET /api/cache/stats  
+آمار Cache سیستم (در حال توسعه)
+
+**وضعیت**: 🚧 در حال توسعه
+
+**Response (آینده):**
+```json
+{
+  "success": true,
+  "data": {
+    "cacheHits": 1250,
+    "cacheMisses": 89,
+    "hitRate": 93.4,
+    "totalSize": "2.4MB",
+    "itemCount": 45,
+    "expiredItems": 12,
+    "memoryUsage": "1.8MB"
+  }
+}
+```
+
+**خطای فعلی:**
+```json
+{
+  "success": false,
+  "error": "403 Forbidden",
+  "message": "Endpoint در حال توسعه است"
+}
+```
+
+---
+
+## 📊 Admin API Usage Examples
+
+### JavaScript SDK برای Admin
+
+```javascript
+class AdminAPI {
+  constructor(baseURL = '/api') {
+    this.baseURL = baseURL;
+  }
+
+  async request(endpoint, options = {}) {
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+    
+    return response.json();
+  }
+
+  // مدیریت کاربران
+  async getUsers(page = 1, limit = 10, search = '') {
+    const params = new URLSearchParams({ page, limit, search });
+    return this.request(`/admin/users?${params}`);
+  }
+
+  async createUser(userData) {
+    return this.request('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+  }
+
+  async updateUser(username, updates) {
+    return this.request(`/admin/users/${username}`, {
+      method: 'PUT', 
+      body: JSON.stringify(updates)
+    });
+  }
+
+  async deleteUser(username) {
+    return this.request(`/admin/users/${username}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // آمار سیستم
+  async getStats() {
+    return this.request('/admin/stats');
+  }
+
+  async getCacheStats() {
+    return this.request('/cache/stats');
+  }
+}
+
+// استفاده
+const adminAPI = new AdminAPI();
+
+// دریافت لیست کاربران
+const users = await adminAPI.getUsers(1, 10);
+console.log('کاربران:', users.data.users);
+
+// ایجاد کاربر جدید
+const newUser = await adminAPI.createUser({
+  username: 'testuser',
+  password: 'password123',
+  firstName: 'کاربر',
+  lastName: 'تست',
+  role: 'user'
+});
+
+// آمار سیستم
+const stats = await adminAPI.getStats();
+console.log('آمار:', stats.data);
+```
+
+---
+
+## �📊 API Usage Analytics
 
 ### Request/Response Metrics
 - **میانگین Response Time**: 150ms

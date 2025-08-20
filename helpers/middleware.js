@@ -14,7 +14,7 @@ const { logRequest, logSecurityEvent, logger } = require('./logger');
 
 // Rate limiting configurations
 const rateLimiters = {
-  // عمومی - برای تمام درخواست‌ها
+  // عمومی - برای تمام درخواست‌ها (به جز فایل‌های استاتیک)
   general: rateLimit({
     windowMs: 15 * 60 * 1000, // 15 دقیقه
     max: 100, // حداکثر 100 درخواست در 15 دقیقه
@@ -23,6 +23,11 @@ const rateLimiters = {
     },
     standardHeaders: true,
     legacyHeaders: false,
+    // Skip static files
+    skip: (req) => {
+      const staticExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot'];
+      return staticExtensions.some(ext => req.url.toLowerCase().endsWith(ext));
+    },
     handler: (req, res) => {
       logSecurityEvent('RATE_LIMIT_EXCEEDED', {
         ip: req.ip,
