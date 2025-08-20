@@ -4,8 +4,9 @@
  * @version 2.0.0
  */
 
-// عناصر DOM
+// عناصر DOM و وضعیت اولیه
 let sidebar, sidebarOverlay, settingsModal;
+let uiInitialized = false; // جلوگیری از افزودن چندباره لیسنرها
 
 // مقداردهی
 function initDOM() {
@@ -16,38 +17,97 @@ function initDOM() {
 
 // مدیریت سایدبار
 function toggleSidebar() {
+    console.log('🔥 toggleSidebar called!');
     if (sidebar && sidebarOverlay) {
-        const isOpen = sidebar.classList.contains('open');
-        if (isOpen) {
-            sidebar.classList.remove('open');
-            sidebarOverlay.style.display = 'none';
-        } else {
-            sidebar.classList.add('open');
-            sidebarOverlay.style.display = 'block';
-        }
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('active');
+    // بروزرسانی aria-expanded برای دسترس‌پذیری
+    const btn = document.getElementById('menuToggle');
+    if (btn) btn.setAttribute('aria-expanded', sidebar.classList.contains('open') ? 'true' : 'false');
+        console.log(`Sidebar is now ${sidebar.classList.contains('open') ? 'open' : 'closed'}`);
+    } else {
+        console.error('❌ sidebar یا sidebarOverlay پیدا نشد!');
     }
 }
 
 function closeSidebar() {
-    if (sidebar && sidebarOverlay) {
+    console.log('🔒 closeSidebar called');
+    if (sidebar && sidebarOverlay && sidebar.classList.contains('open')) {
+        console.log('🔒 در حال بستن سایدبار از closeSidebar...');
         sidebar.classList.remove('open');
-        sidebarOverlay.style.display = 'none';
+        sidebarOverlay.classList.remove('active');
+    const btn = document.getElementById('menuToggle');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
     }
 }
 
 // تنظیم Event Listeners
 function setupEventListeners() {
-    // منوی همبرگری
-    document.getElementById('menuToggle')?.addEventListener('click', toggleSidebar);
+    console.log('🔧 تنظیم UI Event Listeners...');
+    if (uiInitialized) {
+        console.log('⚠️ UI Event Listeners قبلا تنظیم شده‌اند، عبور.');
+        return;
+    }
+    uiInitialized = true;
     
-    // بستن سایدبار
+    // منوی همبرگری - تفویض رویداد در فاز capture برای اطمینان
+    document.addEventListener('click', function onMenuCapture(e) {
+        const btn = e.target && (e.target.id === 'menuToggle' ? e.target : e.target.closest && e.target.closest('#menuToggle'));
+        if (btn) {
+            console.log('🔥 UI Module: menuToggle (delegated, capture) clicked!', e);
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSidebar();
+        }
+    }, true);
+    console.log('✅ menuToggle delegated listener ثبت شد (capture)');
+    
+    // بستن سایدبار با overlay
     if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', closeSidebar);
+        sidebarOverlay.addEventListener('click', function(e) {
+            console.log('🔥 Overlay clicked - بستن سایدبار');
+            e.preventDefault();
+            e.stopPropagation();
+            closeSidebar();
+        });
+        console.log('✅ sidebarOverlay event listener اضافه شد');
+    } else {
+        console.warn('⚠️ sidebarOverlay element پیدا نشد!');
     }
     
-    // بستن سایدبار با کلیک روی پس‌زمینه
-    document.addEventListener('click', (e) => {
-        if (!sidebar?.contains(e.target) && !e.target.closest('#menuToggle')) {
+    // رویداد عمومی برای بستن سایدبار
+    document.addEventListener('click', function(e) {
+        // فقط اگر sidebar در حالت موبایل باز است
+        if (sidebar && sidebar.classList.contains('open')) {
+            console.log('🔍 Document click - target:', e.target.tagName, e.target.className);
+            console.log('🔍 Target element:', e.target);
+            
+            // بررسی اینکه آیا کلیک داخل sidebar بوده یا خیر
+            const clickedInsideSidebar = sidebar.contains(e.target);
+            const clickedOnMenuToggle = e.target.closest('#menuToggle');
+            
+            console.log('🔍 clickedInsideSidebar:', clickedInsideSidebar);
+            console.log('🔍 clickedOnMenuToggle:', clickedOnMenuToggle);
+            
+            // اگر کلیک خارج از sidebar و دکمه منو بود
+            if (!clickedInsideSidebar && !clickedOnMenuToggle) {
+                console.log('🔥 کلیک خارج از sidebar - بستن منو');
+                e.preventDefault();
+                e.stopPropagation();
+                closeSidebar();
+            }
+            
+            // اگر روی چت کلیک شد
+            if (e.target.closest('.chat-list li')) {
+                console.log('🔥 کلیک روی چت - بستن منو');
+                setTimeout(() => closeSidebar(), 150);
+            }
+        }
+    }, false); // استفاده از bubble phase
+
+    // بستن سایدبار در تغییر اندازه به دسکتاپ
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
             closeSidebar();
         }
     });
@@ -158,3 +218,20 @@ if (typeof window !== 'undefined') {
 }
 
 console.log('📦 ماژول UI بارگذاری شد - UIModule در window قرار گرفت');
+
+// اطمینان از مقداردهی حتی اگر app.js معطل سایر ماژول‌ها بماند
+try {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.UIModule && typeof window.UIModule.init === 'function') {
+                window.UIModule.init();
+            }
+        });
+    } else {
+        if (window.UIModule && typeof window.UIModule.init === 'function') {
+            window.UIModule.init();
+        }
+    }
+} catch (e) {
+    console.warn('⚠️ خطا در self-init ماژول UI:', e);
+}

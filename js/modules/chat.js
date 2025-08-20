@@ -72,6 +72,38 @@ async function fetchChats() {
     }
 }
 
+// تابع helper برای نمایش تاریخ
+function formatChatDate(dateString) {
+    try {
+        if (!dateString) return 'تاریخ نامشخص';
+        
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'تاریخ نامعتبر';
+        
+        // محاسبه زمان گذشته
+        const now = new Date();
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        
+        if (diffMinutes < 1) return 'اکنون';
+        if (diffMinutes < 60) return `${diffMinutes} دقیقه پیش`;
+        if (diffHours < 24) return `${diffHours} ساعت پیش`;
+        if (diffDays < 7) return `${diffDays} روز پیش`;
+        
+        // برای تاریخ‌های قدیمی‌تر، تاریخ کامل نمایش داده شود
+        return date.toLocaleDateString('fa-IR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch (error) {
+        console.warn('خطا در فرمت تاریخ:', error, dateString);
+        return 'تاریخ نامعتبر';
+    }
+}
+
 // رندر لیست چت‌ها
 function renderChatList() {
     console.log('💬 رندر لیست چت‌ها:', {
@@ -97,10 +129,25 @@ function renderChatList() {
     
     console.log('💬 چت‌های فیلتر شده:', filteredChats.length);
     
+    // Debug: بررسی تاریخ چت‌ها
+    filteredChats.forEach((chat, index) => {
+        if (!chat.createdAt || isNaN(new Date(chat.createdAt).getTime())) {
+            console.warn(`⚠️ چت ${index} (${chat.id}) تاریخ نامعتبر دارد:`, chat.createdAt);
+        }
+    });
+    
     chatList.innerHTML = filteredChats.map(chat => `
         <li class="${chat.id === currentChatId ? 'active' : ''}" data-id="${chat.id}">
-            <div class="chat-title">${chat.subject}</div>
-            <div class="chat-date">${new Date(chat.createdAt).toLocaleDateString('fa-IR')}</div>
+            <div class="chat-title">${chat.subject || 'بدون عنوان'}</div>
+            <div class="chat-date">${formatChatDate(chat.createdAt)}</div>
+            <div class="chat-actions">
+                <button class="action-btn copy-btn" onclick="event.stopPropagation(); window.ChatModule?.copyChat('${chat.id}')" title="کپی چت">
+                    <i class="fa fa-copy"></i>
+                </button>
+                <button class="action-btn delete-btn" onclick="event.stopPropagation(); window.ChatModule?.deleteChat('${chat.id}')" title="حذف چت">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </div>
         </li>
     `).join('');
     
@@ -172,10 +219,19 @@ function renderMessages() {
     
     chatContainer.innerHTML = currentMessages.map((msg, index) => {
         const content = msg.content || '';
-        console.log(`💬 رندر پیام ${index}:`, msg.role, content.substring(0, 50) + '...');
+        const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('fa-IR', {hour: '2-digit', minute: '2-digit'}) : '';
+        console.log(`💬 رندر پیام ${index}:`, msg.role, `"${content.substring(0, 50)}..."`);
+        
+        if (!content.trim()) {
+            console.warn(`⚠️ پیام ${index} محتوا ندارد!`, msg);
+        }
+        
         return `
         <div class="message ${msg.role}">
-            <div class="message-content">${content}</div>
+            <div class="message-content">
+                ${content}
+                ${timestamp ? `<div class="message-time">${timestamp}</div>` : ''}
+            </div>
             <div class="message-actions">
                 <button class="action-btn tts-btn" onclick="window.TTSModule?.speakText('${content.replace(/'/g, '\\\'')}')" title="پخش صوتی">
                     <i class="fa fa-volume-up"></i>
@@ -244,12 +300,39 @@ async function sendMessage(content) {
         
         if (res.ok) {
             const data = await res.json();
-            currentMessages[currentMessages.length - 1] = { role: 'assistant', content: data.response };
+            console.log('💬 پاسخ دریافت شد:', data);
+            
+            // بررسی نوع پاسخ و استخراج محتوا
+            let assistantContent = '';
+            if (data.assistantMessage && data.assistantMessage.content) {
+                assistantContent = data.assistantMessage.content;
+            } else if (data.content) {
+                assistantContent = data.content;
+            } else if (data.response) {
+                assistantContent = data.response;
+            } else {
+                console.warn('💬 ساختار پاسخ نامشخص:', data);
+                assistantContent = 'خطا در دریافت پاسخ';
+            }
+            
+            console.log('💬 محتوای نهایی پاسخ:', assistantContent);
+            
+            // به‌روزرسانی آخرین پیام (حذف "در حال فکر کردن...")
+            currentMessages[currentMessages.length - 1] = { 
+                role: 'assistant', 
+                content: assistantContent,
+                timestamp: new Date().toISOString()
+            };
             renderMessages();
+            
+            // به‌روزرسانی لیست چت‌ها
+            fetchChats();
         } else {
             currentMessages.pop(); // حذف "در حال فکر کردن..."
             renderMessages();
-            throw new Error('خطا در دریافت پاسخ');
+            const errorData = await res.json().catch(() => ({}));
+            console.error('💬 خطا در API:', res.status, errorData);
+            throw new Error(errorData.error || 'خطا در دریافت پاسخ');
         }
     } catch (error) {
         console.error('خطا در ارسال پیام:', error);
@@ -264,6 +347,93 @@ function newChat() {
     if (currentSubject) currentSubject.textContent = 'چت جدید';
     if (chatContainer) chatContainer.innerHTML = '';
     renderChatList();
+}
+
+// کپی چت
+async function copyChat(chatId) {
+    try {
+        console.log('💬 شروع کپی چت:', chatId);
+        
+        // دریافت اطلاعات چت
+        const res = await fetch(`/api/chats/${chatId}`);
+        if (!res.ok) throw new Error('خطا در دریافت اطلاعات چت');
+        
+        const chat = await res.json();
+        
+        // تولید متن چت برای کپی
+        const chatText = chat.messages.map(msg => 
+            `${msg.role === 'user' ? '👤 کاربر' : '🤖 دستیار'}: ${msg.content}`
+        ).join('\n\n');
+        
+        const fullText = `📝 چت: ${chat.subject || 'بدون عنوان'}\n📅 تاریخ: ${formatChatDate(chat.createdAt)}\n\n${chatText}`;
+        
+        // کپی به clipboard
+        if (navigator.clipboard) {
+            await navigator.clipboard.writeText(fullText);
+        } else {
+            // fallback برای مرورگرهای قدیمی
+            const textArea = document.createElement('textarea');
+            textArea.value = fullText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
+        
+        if (window.UIModule) {
+            window.UIModule.showNotification('چت با موفقیت کپی شد', 'success');
+        }
+        console.log('✅ چت کپی شد');
+        
+    } catch (error) {
+        console.error('❌ خطا در کپی چت:', error);
+        if (window.UIModule) {
+            window.UIModule.showNotification('خطا در کپی چت', 'error');
+        }
+    }
+}
+
+// حذف چت
+async function deleteChat(chatId) {
+    try {
+        console.log('💬 درخواست حذف چت:', chatId);
+        
+        // تأیید حذف
+        const confirmed = confirm('آیا مطمئن هستید که می‌خواهید این چت را حذف کنید؟');
+        if (!confirmed) return;
+        
+        // ارسال درخواست حذف
+        const res = await fetch(`/api/chats/${chatId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!res.ok) throw new Error('خطا در حذف چت');
+        
+        // حذف از آرایه محلی
+        const chatIndex = chats.findIndex(chat => chat.id === chatId);
+        if (chatIndex > -1) {
+            chats.splice(chatIndex, 1);
+        }
+        
+        // اگر چت فعلی حذف شد، چت جدید باز کن
+        if (currentChatId === chatId) {
+            newChat();
+        }
+        
+        // به‌روزرسانی لیست
+        renderChatList();
+        
+        if (window.UIModule) {
+            window.UIModule.showNotification('چت با موفقیت حذف شد', 'success');
+        }
+        console.log('✅ چت حذف شد');
+        
+    } catch (error) {
+        console.error('❌ خطا در حذف چت:', error);
+        if (window.UIModule) {
+            window.UIModule.showNotification('خطا در حذف چت', 'error');
+        }
+    }
 }
 
 // ویرایش پیام
@@ -382,6 +552,8 @@ if (typeof window !== 'undefined') {
         renderMessages,
         sendMessage,
         newChat,
+        copyChat,
+        deleteChat,
         editMessage,
         deleteMessage,
         saveChat,

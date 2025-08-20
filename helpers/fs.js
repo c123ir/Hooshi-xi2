@@ -54,9 +54,11 @@ async function listChats(username) {
       items.push({ 
         id, 
         subject: chat.subject || 'بدون عنوان', 
+        createdAt: chat.createdAt,
         updatedAt: chat.updatedAt,
         isPinned: chat.isPinned,
-        isArchived: chat.isArchived
+        isArchived: chat.isArchived,
+        messageCount: chat.messages ? chat.messages.length : 0
       });
     }
   }
