@@ -1,0 +1,18 @@
+{
+  "id": "wTdrVimy2L",
+  "subject": "گفتگوی جدید",
+  "messages": [
+    {
+      "role": "user",
+      "content": "سلام",
+      "timestamp": "2025-08-13T21:19:19.824Z"
+    },
+    {
+      "role": "assistant",
+      "content": "سلام! چطور می‌توانم به شما کمک کنم؟",
+      "timestamp": "2025-08-13T21:19:22.335Z"
+    }
+  ],
+  "createdAt": "2025-08-13T19:36:11.841Z",
+  "updatedAt": "2025-08-13T21:32:51.265Z"
+}

@@ -1,0 +1,302 @@
+/**
+ * فایل دیباگ برای تست modules
+ * Debug File for Testing Modules
+ */
+
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Console</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .btn {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #005a9e;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug Console - Module Testing</h1>
+    
+    <div class="status" id="moduleStatus">
+        <h3>Module Status:</h3>
+        <div id="authStatus">Auth Module: Loading...</div>
+        <div id="chatStatus">Chat Module: Loading...</div>
+        <div id="uiStatus">UI Module: Loading...</div>
+        <div id="ttsStatus">TTS Module: Loading...</div>
+    </div>
+    
+    <div>
+        <button class="btn" onclick="testModules()">🧪 Test All Modules</button>
+        <button class="btn" onclick="testAuth()">🔐 Test Auth</button>
+        <button class="btn" onclick="testChat()">💬 Test Chat</button>
+        <button class="btn" onclick="testUI()">🎨 Test UI</button>
+        <button class="btn" onclick="testTTS()">🔊 Test TTS</button>
+        <button class="btn" onclick="clearConsole()">🧹 Clear</button>
+    </div>
+    
+    <div class="console" id="debugConsole">
+        <div>🚀 Debug Console Ready</div>
+    </div>
+
+    <!-- بارگیری ماژول‌ها -->
+    <script src="js/modules/auth.js" defer></script>
+    <script src="js/modules/ui.js" defer></script>
+    <script src="js/modules/chat.js" defer></script>
+    <script src="js/modules/tts.js" defer></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const console = document.getElementById('debugConsole');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = {
+                info: '#d4d4d4',
+                success: '#4ec9b0',
+                error: '#f44747',
+                warning: '#ffcc02'
+            }[type];
+            
+            console.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        function clearConsole() {
+            document.getElementById('debugConsole').innerHTML = '<div>🧹 Console Cleared</div>';
+        }
+        
+        function checkModuleStatus() {
+            const modules = {
+                auth: window.AuthModule,
+                chat: window.ChatModule,
+                ui: window.UIModule,
+                tts: window.TTSModule
+            };
+            
+            Object.entries(modules).forEach(([name, module]) => {
+                const status = document.getElementById(`${name}Status`);
+                if (module) {
+                    status.textContent = `${name.toUpperCase()} Module: ✅ Loaded`;
+                    status.className = 'success';
+                } else {
+                    status.textContent = `${name.toUpperCase()} Module: ❌ Not Found`;
+                    status.className = 'error';
+                }
+            });
+        }
+        
+        function testModules() {
+            log('🧪 Starting comprehensive module test...', 'info');
+            checkModuleStatus();
+            
+            // تست window objects
+            log(`window.AuthModule: ${!!window.AuthModule}`, window.AuthModule ? 'success' : 'error');
+            log(`window.ChatModule: ${!!window.ChatModule}`, window.ChatModule ? 'success' : 'error');
+            log(`window.UIModule: ${!!window.UIModule}`, window.UIModule ? 'success' : 'error');
+            log(`window.TTSModule: ${!!window.TTSModule}`, window.TTSModule ? 'success' : 'error');
+            
+            // تست functions
+            if (window.AuthModule) {
+                log(`AuthModule.getCurrentUser: ${typeof window.AuthModule.getCurrentUser}`, 'info');
+                log(`AuthModule.checkAuthStatus: ${typeof window.AuthModule.checkAuthStatus}`, 'info');
+            }
+            
+            if (window.ChatModule) {
+                log(`ChatModule.init: ${typeof window.ChatModule.init}`, 'info');
+                log(`ChatModule.fetchChats: ${typeof window.ChatModule.fetchChats}`, 'info');
+            }
+            
+            log('✅ Module test completed', 'success');
+        }
+        
+        function testAuth() {
+            log('🔐 Testing Auth Module...', 'info');
+            if (!window.AuthModule) {
+                log('❌ AuthModule not found!', 'error');
+                return;
+            }
+            
+            try {
+                const currentUser = window.AuthModule.getCurrentUser();
+                log(`Current User: ${JSON.stringify(currentUser)}`, 'info');
+                
+                // تست init
+                if (typeof window.AuthModule.initAuthModule === 'function') {
+                    log('Calling initAuthModule...', 'info');
+                    window.AuthModule.initAuthModule();
+                    log('✅ initAuthModule called successfully', 'success');
+                }
+                
+                // تست checkAuthStatus
+                if (typeof window.AuthModule.checkAuthStatus === 'function') {
+                    log('Calling checkAuthStatus...', 'info');
+                    window.AuthModule.checkAuthStatus().then(() => {
+                        log('✅ checkAuthStatus completed', 'success');
+                    }).catch(err => {
+                        log(`❌ checkAuthStatus error: ${err.message}`, 'error');
+                    });
+                }
+                
+            } catch (error) {
+                log(`❌ Auth test error: ${error.message}`, 'error');
+            }
+        }
+        
+        function testChat() {
+            log('💬 Testing Chat Module...', 'info');
+            if (!window.ChatModule) {
+                log('❌ ChatModule not found!', 'error');
+                return;
+            }
+            
+            try {
+                if (typeof window.ChatModule.init === 'function') {
+                    log('Calling ChatModule.init...', 'info');
+                    window.ChatModule.init();
+                    log('✅ ChatModule.init called successfully', 'success');
+                }
+                
+                if (typeof window.ChatModule.fetchChats === 'function') {
+                    log('Calling fetchChats...', 'info');
+                    window.ChatModule.fetchChats().then(() => {
+                        log('✅ fetchChats completed', 'success');
+                    }).catch(err => {
+                        log(`❌ fetchChats error: ${err.message}`, 'error');
+                    });
+                }
+                
+            } catch (error) {
+                log(`❌ Chat test error: ${error.message}`, 'error');
+            }
+        }
+        
+        function testUI() {
+            log('🎨 Testing UI Module...', 'info');
+            if (!window.UIModule) {
+                log('❌ UIModule not found!', 'error');
+                return;
+            }
+            
+            try {
+                if (typeof window.UIModule.init === 'function') {
+                    log('Calling UIModule.init...', 'info');
+                    window.UIModule.init();
+                    log('✅ UIModule.init called successfully', 'success');
+                }
+                
+                if (typeof window.UIModule.showNotification === 'function') {
+                    log('Testing notification...', 'info');
+                    window.UIModule.showNotification('Test notification from debug console!');
+                    log('✅ Notification test completed', 'success');
+                }
+                
+            } catch (error) {
+                log(`❌ UI test error: ${error.message}`, 'error');
+            }
+        }
+        
+        function testTTS() {
+            log('🔊 Testing TTS Module...', 'info');
+            if (!window.TTSModule) {
+                log('❌ TTSModule not found!', 'error');
+                return;
+            }
+            
+            try {
+                if (typeof window.TTSModule.initializeTTS === 'function') {
+                    log('Calling TTSModule.initializeTTS...', 'info');
+                    window.TTSModule.initializeTTS();
+                    log('✅ TTSModule.initializeTTS called successfully', 'success');
+                }
+                
+                log(`TTS Functions available:`, 'info');
+                Object.keys(window.TTSModule).forEach(key => {
+                    log(`  - ${key}: ${typeof window.TTSModule[key]}`, 'info');
+                });
+                
+            } catch (error) {
+                log(`❌ TTS test error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-check modules when loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 DOM Content Loaded', 'info');
+            
+            // Check modules periodically
+            const checkInterval = setInterval(() => {
+                if (window.AuthModule && window.ChatModule && window.UIModule && window.TTSModule) {
+                    log('✅ All modules loaded successfully!', 'success');
+                    checkModuleStatus();
+                    clearInterval(checkInterval);
+                    
+                    // Auto-test after 1 second
+                    setTimeout(() => {
+                        testModules();
+                    }, 1000);
+                }
+            }, 100);
+            
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                if (!(window.AuthModule && window.ChatModule && window.UIModule && window.TTSModule)) {
+                    log('⚠️ Module loading timeout! Some modules failed to load.', 'warning');
+                    checkModuleStatus();
+                }
+            }, 10000);
+        });
+        
+        // Override console methods to capture logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            log(args.join(' '), 'info');
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            log(args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            log(args.join(' '), 'warning');
+            originalWarn.apply(console, args);
+        };
+        
+    </script>
+</body>
+</html>

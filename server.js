@@ -48,6 +48,7 @@ function requireAuth(req, res, next) {اپن‌اِی‌آی را بر عهده 
 */
 
 require('dotenv').config();
+const fs = require('fs');
 const express = require('express');
 const { nanoid } = require('nanoid');
 

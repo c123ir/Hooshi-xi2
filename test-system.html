@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست سیستم</title>
+    <style>
+        body { font-family: Arial; padding: 20px; direction: rtl; }
+        .test-item { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        button { margin: 5px; padding: 10px; }
+        #logs { background: #f8f9fa; padding: 10px; margin-top: 20px; height: 300px; overflow-y: scroll; }
+    </style>
+</head>
+<body>
+    <h1>🧪 تست سیستم</h1>
+    
+    <div id="moduleTests">
+        <div class="test-item" id="authTest">📦 Auth Module: بارگیری...</div>
+        <div class="test-item" id="chatTest">📦 Chat Module: بارگیری...</div>
+        <div class="test-item" id="uiTest">📦 UI Module: بارگیری...</div>
+        <div class="test-item" id="ttsTest">📦 TTS Module: بارگیری...</div>
+    </div>
+    
+    <div>
+        <button onclick="testAuth()">تست Auth</button>
+        <button onclick="testAPI()">تست API</button>
+        <button onclick="testUI()">تست UI</button>
+        <button onclick="testChats()">تست Chats</button>
+        <button onclick="clearLogs()">پاک کردن</button>
+    </div>
+    
+    <div id="logs"></div>
+    
+    <script>
+        const logs = document.getElementById('logs');
+        
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString('fa-IR');
+            const div = document.createElement('div');
+            div.innerHTML = `[${time}] ${message}`;
+            div.style.color = type === 'error' ? 'red' : type === 'warn' ? 'orange' : 'black';
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function clearLogs() {
+            logs.innerHTML = '';
+        }
+        
+        function updateModuleStatus(module, status) {
+            const element = document.getElementById(module + 'Test');
+            if (element) {
+                element.textContent = `📦 ${module.charAt(0).toUpperCase() + module.slice(1)} Module: ${status}`;
+                element.className = `test-item ${status === 'آماده' ? 'success' : 'error'}`;
+            }
+        }
+        
+        // چک کردن modules
+        function checkModules() {
+            updateModuleStatus('auth', window.AuthModule ? 'آماده' : 'خطا');
+            updateModuleStatus('chat', window.ChatModule ? 'آماده' : 'خطا');
+            updateModuleStatus('ui', window.UIModule ? 'آماده' : 'خطا');
+            updateModuleStatus('tts', window.TTSModule ? 'آماده' : 'خطا');
+        }
+        
+        async function testAuth() {
+            log('🔑 تست احراز هویت...');
+            try {
+                const response = await fetch('/api/auth/me');
+                const data = await response.json();
+                if (response.ok) {
+                    log(`✅ کاربر وارد است: ${data.username}`, 'info');
+                } else {
+                    log('ℹ️ کاربر وارد نیست', 'warn');
+                }
+            } catch (error) {
+                log(`❌ خطا در auth: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAPI() {
+            log('🔗 تست API...');
+            try {
+                const response = await fetch('/api/chats');
+                const data = await response.json();
+                if (response.ok) {
+                    log(`✅ API کار می‌کند. چت‌ها: ${data.length}`, 'info');
+                } else {
+                    log(`❌ خطا در API: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ خطا در API: ${error.message}`, 'error');
+            }
+        }
+        
+        function testUI() {
+            log('🎨 تست UI...');
+            const chatList = document.getElementById('chatList');
+            log(`ChatList عنصر: ${chatList ? 'موجود' : 'موجود نیست'}`);
+            
+            const userInput = document.getElementById('userInput');
+            log(`UserInput عنصر: ${userInput ? 'موجود' : 'موجود نیست'}`);
+            
+            const sendBtn = document.getElementById('sendBtn');
+            log(`Send Button: ${sendBtn ? 'موجود' : 'موجود نیست'}`);
+        }
+        
+        async function testChats() {
+            log('💬 تست چت‌ها...');
+            if (window.ChatModule) {
+                log('✅ ChatModule آماده است');
+                if (typeof window.ChatModule.fetchChats === 'function') {
+                    log('🔄 فراخوانی fetchChats...');
+                    await window.ChatModule.fetchChats();
+                    log('✅ fetchChats اجرا شد');
+                } else {
+                    log('❌ fetchChats موجود نیست', 'error');
+                }
+            } else {
+                log('❌ ChatModule آماده نیست', 'error');
+            }
+        }
+        
+        // رصد modules
+        const checkInterval = setInterval(() => {
+            checkModules();
+            if (window.AuthModule && window.ChatModule && window.UIModule && window.TTSModule) {
+                log('🎉 همه modules آماده شدند!');
+                clearInterval(checkInterval);
+            }
+        }, 500);
+        
+        log('🚀 شروع تست سیستم...');
+        
+        // Override console
+        const originalLog = console.log;
+        console.log = (...args) => {
+            originalLog(...args);
+            log(args.join(' '));
+        };
+        
+        const originalError = console.error;
+        console.error = (...args) => {
+            originalError(...args);
+            log(args.join(' '), 'error');
+        };
+        
+        setTimeout(() => {
+            log('⏰ 3 ثانیه گذشت - چک کردن وضعیت...');
+            checkModules();
+            testAuth();
+        }, 3000);
+    </script>
+    
+    <!-- بارگیری modules -->
+    <script src="js/modules/auth.js" defer></script>
+    <script src="js/modules/ui.js" defer></script>
+    <script src="js/modules/chat.js" defer></script>
+    <script src="js/modules/tts.js" defer></script>
+    <script src="js/app.js" defer></script>
+</body>
+</html>
